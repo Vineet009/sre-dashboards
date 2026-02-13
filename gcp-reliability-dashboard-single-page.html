@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCP Reliability Dashboard - All Levels</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .level-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #3b82f6;
+        }
+
+        .level-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .level-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .level-badge {
+            background: #3b82f6;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #f1f5f9 0%, #ffffff 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-trend {
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .trend-up {
+            color: #10b981;
+        }
+
+        .trend-down {
+            color: #ef4444;
+        }
+
+        .metric-source {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .app-card, .cuj-card, .slo-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .app-card:hover, .cuj-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-healthy {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-critical {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .card-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-metric {
+            text-align: center;
+        }
+
+        .card-metric-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-bottom: 0.25rem;
+        }
+
+        .card-metric-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .gcp-info {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .slo-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .slo-detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slo-detail-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .slo-detail-value {
+            font-size: 0.875rem;
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        .error-budget {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .error-budget-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .progress-healthy {
+            background: linear-gradient(90deg, #10b981, #059669);
+        }
+
+        .progress-warning {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+
+        .progress-critical {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+
+        .error-budget-value {
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .insights-section {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .insights-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .insight-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .insight-priority {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+            align-self: flex-start;
+        }
+
+        .priority-critical {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .priority-high {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .priority-medium {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .insight-content {
+            flex: 1;
+        }
+
+        .insight-text {
+            color: #475569;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .insight-action {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .insight-action:hover {
+            background: #2563eb;
+        }
+
+        .data-note {
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            font-size: 0.875rem;
+            color: #92400e;
+        }
+
+        .data-note strong {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        @media print {
+            .container {
+                max-width: 100%;
+            }
+            .level-section {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 GCP Reliability Dashboard</h1>
+            <p>Multi-Level Service Reliability Monitoring Across 10 Applications</p>
+        </div>
+
+        <div class="data-note">
+            <strong>📊 Data Source Information:</strong>
+            This dashboard displays metrics fetched from Google Cloud Monitoring API across multiple GCP projects. 
+            Each metric includes the source API endpoint for reference. Replace sample data with actual GCP API calls.
+        </div>
+
+        <!-- LEVEL 1: DEPARTMENT VIEW -->
+        <div class="level-section">
+            <div class="level-header">
+                <div>
+                    <div class="level-title">Level 1: Department Overview</div>
+                    <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">
+                        Executive View - Aggregated metrics from 10 GCP projects
+                    </p>
+                </div>
+                <div class="level-badge">For: Department Head / CTO</div>
+            </div>
+
+            <div class="metrics-row">
+                <div class="metric-card">
+                    <div class="metric-label">Overall Reliability</div>
+                    <div class="metric-value">98.7%</div>
+                    <div class="metric-trend trend-up">
+                        ▲ 0.2% from last month
+                    </div>
+                    <div class="metric-source">
+                        Source: Aggregated from run.googleapis.com/request_count (success rate)
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Overall Availability</div>
+                    <div class="metric-value">99.2%</div>
+                    <div class="metric-trend trend-up">
+                        ▲ 0.1% from last month
+                    </div>
+                    <div class="metric-source">
+                        Source: monitoring.googleapis.com/uptime_check/check_passed
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Overall Latency Score</div>
+                    <div class="metric-value">97.8%</div>
+                    <div class="metric-trend trend-down">
+                        ▼ 0.3% from last month
+                    </div>
+                    <div class="metric-source">
+                        Source: run.googleapis.com/request_latencies (P95 < threshold)
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 1rem; color: #1e293b;">Application Health (10 GCP Projects)</h3>
+            <div class="cards-grid">
+                <div class="app-card">
+                    <div class="card-header">
+                        <div class="card-title">Payment Service</div>
+                        <div class="status-badge status-healthy">Healthy</div>
+                    </div>
+                    <div class="card-metrics">
+                        <div class="card-metric">
+                            <div class="card-metric-label">Reliability</div>
+                            <div class="card-metric-value">99.1%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Availability</div>
+                            <div class="card-metric-value">99.5%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Latency</div>
+                            <div class="card-metric-value">98.2%</div>
+                        </div>
+                    </div>
+                    <div class="gcp-info">
+                        📁 GCP Project: <strong>payment-service-prod</strong><br>
+                        🔄 Last 24h: 1.25M requests | P95: 145ms
+                    </div>
+                </div>
+
+                <div class="app-card">
+                    <div class="card-header">
+                        <div class="card-title">User Authentication</div>
+                        <div class="status-badge status-healthy">Healthy</div>
+                    </div>
+                    <div class="card-metrics">
+                        <div class="card-metric">
+                            <div class="card-metric-label">Reliability</div>
+                            <div class="card-metric-value">99.5%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Availability</div>
+                            <div class="card-metric-value">99.8%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Latency</div>
+                            <div class="card-metric-value">99.1%</div>
+                        </div>
+                    </div>
+                    <div class="gcp-info">
+                        📁 GCP Project: <strong>auth-service-prod</strong><br>
+                        🔄 Last 24h: 2.1M requests | P95: 78ms
+                    </div>
+                </div>
+
+                <div class="app-card">
+                    <div class="card-header">
+                        <div class="card-title">Inventory System</div>
+                        <div class="status-badge status-warning">Warning</div>
+                    </div>
+                    <div class="card-metrics">
+                        <div class="card-metric">
+                            <div class="card-metric-label">Reliability</div>
+                            <div class="card-metric-value">97.9%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Availability</div>
+                            <div class="card-metric-value">98.5%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Latency</div>
+                            <div class="card-metric-value">96.8%</div>
+                        </div>
+                    </div>
+                    <div class="gcp-info">
+                        📁 GCP Project: <strong>inventory-service-prod</strong><br>
+                        🔄 Last 24h: 850K requests | P95: 425ms
+                    </div>
+                </div>
+
+                <div class="app-card">
+                    <div class="card-header">
+                        <div class="card-title">Analytics Pipeline</div>
+                        <div class="status-badge status-healthy">Healthy</div>
+                    </div>
+                    <div class="card-metrics">
+                        <div class="card-metric">
+                            <div class="card-metric-label">Reliability</div>
+                            <div class="card-metric-value">98.3%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Availability</div>
+                            <div class="card-metric-value">98.9%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Latency</div>
+                            <div class="card-metric-value">97.5%</div>
+                        </div>
+                    </div>
+                    <div class="gcp-info">
+                        📁 GCP Project: <strong>analytics-pipeline-prod</strong><br>
+                        🔄 Last 24h: 3.2M events | P95: 1.2s
+                    </div>
+                </div>
+            </div>
+
+            <div class="insights-section">
+                <div class="insights-title">
+                    ⚡ Department-Level Actionable Insights
+                </div>
+                <div class="insight-item">
+                    <div class="insight-priority priority-high">High</div>
+                    <div class="insight-content">
+                        <div class="insight-text">
+                            <strong>Inventory System</strong> showing degraded latency performance - 
+                            P95 latency at 425ms exceeds 300ms target. Review Cloud SQL query performance.
+                        </div>
+                        <button class="insight-action">Review Performance Metrics</button>
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-priority priority-medium">Medium</div>
+                    <div class="insight-content">
+                        <div class="insight-text">
+                            <strong>Payment Service</strong> error budget consumption at 60% for the month. 
+                            Monitor refund workflow closely to prevent SLO breach.
+                        </div>
+                        <button class="insight-action">Schedule Review Meeting</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEVEL 2: APPLICATION VIEW -->
+        <div class="level-section" style="border-left-color: #8b5cf6;">
+            <div class="level-header">
+                <div>
+                    <div class="level-title">Level 2: Application Deep-Dive - Payment Service</div>
+                    <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">
+                        Product Owner View - Critical User Journeys (CUJs)
+                    </p>
+                </div>
+                <div class="level-badge" style="background: #8b5cf6;">For: Product Owner / Service Manager</div>
+            </div>
+
+            <div class="metrics-row">
+                <div class="metric-card">
+                    <div class="metric-label">Application Reliability</div>
+                    <div class="metric-value">99.1%</div>
+                    <div class="metric-trend trend-up">
+                        ▲ 0.3% from last week
+                    </div>
+                    <div class="metric-source">
+                        Project: payment-service-prod | Metric: request success rate
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Application Availability</div>
+                    <div class="metric-value">99.5%</div>
+                    <div class="metric-trend trend-up">
+                        Stable
+                    </div>
+                    <div class="metric-source">
+                        Uptime checks + Cloud Run container availability
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Application Latency</div>
+                    <div class="metric-value">98.2%</div>
+                    <div class="metric-trend trend-down">
+                        ▼ 0.5% from last week
+                    </div>
+                    <div class="metric-source">
+                        P95 latency compliance across all endpoints
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 1rem; color: #1e293b;">Critical User Journeys (CUJs)</h3>
+            <div class="cards-grid">
+                <div class="cuj-card">
+                    <div class="card-header">
+                        <div class="card-title">Payment Processing</div>
+                        <div style="font-size: 1.5rem;">💳</div>
+                    </div>
+                    <div class="card-metrics">
+                        <div class="card-metric">
+                            <div class="card-metric-label">Reliability</div>
+                            <div class="card-metric-value">99.3%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Availability</div>
+                            <div class="card-metric-value">99.6%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Latency</div>
+                            <div class="card-metric-value">98.5%</div>
+                        </div>
+                    </div>
+                    <div class="gcp-info">
+                        🔍 Filter: service_name="payment-api" AND path="/api/v1/process-payment"<br>
+                        📊 24h: 850K requests | P95: 145ms | Errors: 5.1K (0.6%)
+                    </div>
+                </div>
+
+                <div class="cuj-card">
+                    <div class="card-header">
+                        <div class="card-title">Refund Workflow</div>
+                        <div style="font-size: 1.5rem;">↩️</div>
+                    </div>
+                    <div class="card-metrics">
+                        <div class="card-metric">
+                            <div class="card-metric-label">Reliability</div>
+                            <div class="card-metric-value">98.9%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Availability</div>
+                            <div class="card-metric-value">99.4%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Latency</div>
+                            <div class="card-metric-value">97.9%</div>
+                        </div>
+                    </div>
+                    <div class="gcp-info">
+                        🔍 Filter: service_name="refund-processor"<br>
+                        📊 24h: 125K requests | P95: 380ms | Queue depth: avg 12 msgs
+                    </div>
+                </div>
+
+                <div class="cuj-card">
+                    <div class="card-header">
+                        <div class="card-title">Transaction Verification</div>
+                        <div style="font-size: 1.5rem;">✅</div>
+                    </div>
+                    <div class="card-metrics">
+                        <div class="card-metric">
+                            <div class="card-metric-label">Reliability</div>
+                            <div class="card-metric-value">99.6%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Availability</div>
+                            <div class="card-metric-value">99.8%</div>
+                        </div>
+                        <div class="card-metric">
+                            <div class="card-metric-label">Latency</div>
+                            <div class="card-metric-value">99.1%</div>
+                        </div>
+                    </div>
+                    <div class="gcp-info">
+                        🔍 Filter: path="/api/v1/verify"<br>
+                        📊 24h: 275K requests | P95: 95ms | Fraud checks: 2.8K flagged
+                    </div>
+                </div>
+            </div>
+
+            <div class="insights-section">
+                <div class="insights-title">
+                    ⚡ Application-Level Actionable Insights
+                </div>
+                <div class="insight-item">
+                    <div class="insight-priority priority-high">High</div>
+                    <div class="insight-content">
+                        <div class="insight-text">
+                            <strong>Refund Workflow</strong> latency trending upward - P95 at 380ms vs 300ms target. 
+                            Investigate Pub/Sub queue processing and Cloud SQL connection pooling.
+                        </div>
+                        <button class="insight-action">Optimize Queue Processing</button>
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-priority priority-medium">Medium</div>
+                    <div class="insight-content">
+                        <div class="insight-text">
+                            <strong>Payment Processing</strong> showing increased 401 errors (2.1K/day). 
+                            Review authentication token expiration and refresh logic.
+                        </div>
+                        <button class="insight-action">Review Auth Flow</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEVEL 3: SLO VIEW -->
+        <div class="level-section" style="border-left-color: #10b981;">
+            <div class="level-header">
+                <div>
+                    <div class="level-title">Level 3: SLO Details - Payment Processing CUJ</div>
+                    <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">
+                        Dev & Ops View - Individual Service Level Objectives with Error Budgets
+                    </p>
+                </div>
+                <div class="level-badge" style="background: #10b981;">For: DevOps / SRE Team</div>
+            </div>
+
+            <div class="metrics-row">
+                <div class="metric-card">
+                    <div class="metric-label">Avg SLO Reliability</div>
+                    <div class="metric-value">99.1%</div>
+                    <div class="metric-trend trend-up">
+                        All SLOs within target
+                    </div>
+                    <div class="metric-source">
+                        Aggregated from 3 SLOs for this CUJ
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Avg SLO Availability</div>
+                    <div class="metric-value">99.6%</div>
+                    <div class="metric-trend trend-up">
+                        2 of 3 exceeding target
+                    </div>
+                    <div class="metric-source">
+                        Service uptime + health checks
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Avg SLO Latency</div>
+                    <div class="metric-value">98.5%</div>
+                    <div class="metric-trend trend-down">
+                        1 SLO needs attention
+                    </div>
+                    <div class="metric-source">
+                        P95/P99 latency compliance
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 1rem; color: #1e293b;">Service Level Objectives (SLOs)</h3>
+            <div class="cards-grid">
+                <!-- SLO 1: API Latency -->
+                <div class="slo-card">
+                    <div class="card-header">
+                        <div class="card-title">API Response Time</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #3b82f6;">98.5%</div>
+                    </div>
+
+                    <div class="slo-details">
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Target</div>
+                            <div class="slo-detail-value">&lt; 200ms (P95)</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Current P95</div>
+                            <div class="slo-detail-value">145ms</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Threshold</div>
+                            <div class="slo-detail-value">95% compliance</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Actual</div>
+                            <div class="slo-detail-value">98.5% ✓</div>
+                        </div>
+                    </div>
+
+                    <div class="error-budget">
+                        <div class="error-budget-label">Error Budget Remaining (30 days)</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-healthy" style="width: 70%;"></div>
+                        </div>
+                        <div class="error-budget-value" style="color: #10b981;">70.0% remaining</div>
+                    </div>
+
+                    <div class="gcp-info" style="margin-top: 1rem;">
+                        📊 GCP Metric: <code>run.googleapis.com/request_latencies</code><br>
+                        🎯 24h Stats: 850K requests | 837K met SLO (98.5%)<br>
+                        ⚠️ Action: Monitor - healthy margin
+                    </div>
+                </div>
+
+                <!-- SLO 2: Service Uptime -->
+                <div class="slo-card">
+                    <div class="card-header">
+                        <div class="card-title">Service Availability</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #10b981;">99.6%</div>
+                    </div>
+
+                    <div class="slo-details">
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Target</div>
+                            <div class="slo-detail-value">99.0% uptime</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Current</div>
+                            <div class="slo-detail-value">99.6%</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Downtime (30d)</div>
+                            <div class="slo-detail-value">172.8 min</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Allowed</div>
+                            <div class="slo-detail-value">432 min</div>
+                        </div>
+                    </div>
+
+                    <div class="error-budget">
+                        <div class="error-budget-label">Error Budget Remaining (30 days)</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-healthy" style="width: 60%;"></div>
+                        </div>
+                        <div class="error-budget-value" style="color: #10b981;">60.0% remaining (259.2 min)</div>
+                    </div>
+
+                    <div class="gcp-info" style="margin-top: 1rem;">
+                        📊 GCP Metric: <code>monitoring.googleapis.com/uptime_check/check_passed</code><br>
+                        📍 Check Locations: us-central1, europe-west1, asia-east1<br>
+                        🕐 Last Incident: Jan 5, 2025 - 45min (EU region LB config)
+                    </div>
+                </div>
+
+                <!-- SLO 3: Error Rate -->
+                <div class="slo-card">
+                    <div class="card-header">
+                        <div class="card-title">Request Success Rate</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #10b981;">99.4%</div>
+                    </div>
+
+                    <div class="slo-details">
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Target</div>
+                            <div class="slo-detail-value">&lt; 1% error rate</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Current Error Rate</div>
+                            <div class="slo-detail-value">0.6%</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">4xx Errors</div>
+                            <div class="slo-detail-value">3,400</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">5xx Errors</div>
+                            <div class="slo-detail-value">1,700</div>
+                        </div>
+                    </div>
+
+                    <div class="error-budget">
+                        <div class="error-budget-label">Error Budget Remaining (30 days)</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-warning" style="width: 40%;"></div>
+                        </div>
+                        <div class="error-budget-value" style="color: #f59e0b;">40.0% remaining</div>
+                    </div>
+
+                    <div class="gcp-info" style="margin-top: 1rem;">
+                        📊 GCP Metric: <code>run.googleapis.com/request_count</code><br>
+                        🔍 Filter: <code>response_code_class="4xx" OR "5xx"</code><br>
+                        ⚠️ Top Error: 401 Unauthorized (2,100) - Review auth tokens
+                    </div>
+                </div>
+
+                <!-- SLO 4: Database Query Performance -->
+                <div class="slo-card">
+                    <div class="card-header">
+                        <div class="card-title">Database Query Latency</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #f59e0b;">96.2%</div>
+                    </div>
+
+                    <div class="slo-details">
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Target</div>
+                            <div class="slo-detail-value">&lt; 100ms (P99)</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Current P99</div>
+                            <div class="slo-detail-value">118ms</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Slow Queries</div>
+                            <div class="slo-detail-value">3.8%</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Connections</div>
+                            <div class="slo-detail-value">45/80</div>
+                        </div>
+                    </div>
+
+                    <div class="error-budget">
+                        <div class="error-budget-label">Error Budget Remaining (30 days)</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-critical" style="width: 24%;"></div>
+                        </div>
+                        <div class="error-budget-value" style="color: #ef4444;">24.0% remaining ⚠️</div>
+                    </div>
+
+                    <div class="gcp-info" style="margin-top: 1rem;">
+                        📊 GCP Metric: <code>cloudsql.googleapis.com/database/mysql/queries</code><br>
+                        🗄️ Instance: <code>payment-db-prod-us-central1</code><br>
+                        🚨 Action Required: Optimize queries on user_payments table
+                    </div>
+                </div>
+
+                <!-- SLO 5: Cache Hit Rate -->
+                <div class="slo-card">
+                    <div class="card-header">
+                        <div class="card-title">Cache Performance</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #10b981;">97.2%</div>
+                    </div>
+
+                    <div class="slo-details">
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Target</div>
+                            <div class="slo-detail-value">&gt; 95% hit rate</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Current Hit Rate</div>
+                            <div class="slo-detail-value">97.2%</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Memory Usage</div>
+                            <div class="slo-detail-value">2.1 / 4.0 GB</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Evictions</div>
+                            <div class="slo-detail-value">142/hour</div>
+                        </div>
+                    </div>
+
+                    <div class="error-budget">
+                        <div class="error-budget-label">Error Budget Remaining (30 days)</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-healthy" style="width: 88%;"></div>
+                        </div>
+                        <div class="error-budget-value" style="color: #10b981;">88.0% remaining</div>
+                    </div>
+
+                    <div class="gcp-info" style="margin-top: 1rem;">
+                        📊 GCP Metric: <code>redis.googleapis.com/stats/cache_hit_ratio</code><br>
+                        💾 Instance: <code>payment-cache-prod</code> (Memorystore Redis)<br>
+                        ✅ Status: Healthy - exceeding target
+                    </div>
+                </div>
+
+                <!-- SLO 6: Message Queue Processing -->
+                <div class="slo-card">
+                    <div class="card-header">
+                        <div class="card-title">Queue Processing Time</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #3b82f6;">98.1%</div>
+                    </div>
+
+                    <div class="slo-details">
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Target</div>
+                            <div class="slo-detail-value">&lt; 5min processing</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Avg Age</div>
+                            <div class="slo-detail-value">12 seconds</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Queue Depth</div>
+                            <div class="slo-detail-value">avg 8 msgs</div>
+                        </div>
+                        <div class="slo-detail-item">
+                            <div class="slo-detail-label">Dead Letters</div>
+                            <div class="slo-detail-value">3</div>
+                        </div>
+                    </div>
+
+                    <div class="error-budget">
+                        <div class="error-budget-label">Error Budget Remaining (30 days)</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-healthy" style="width: 76%;"></div>
+                        </div>
+                        <div class="error-budget-value" style="color: #10b981;">76.0% remaining</div>
+                    </div>
+
+                    <div class="gcp-info" style="margin-top: 1rem;">
+                        📊 GCP Metrics: <code>pubsub.googleapis.com/subscription/*</code><br>
+                        📬 Subscription: <code>payment-events-sub</code><br>
+                        ✅ Status: Processing efficiently
+                    </div>
+                </div>
+            </div>
+
+            <div class="insights-section">
+                <div class="insights-title">
+                    ⚡ SLO-Level Actionable Insights & Remediation
+                </div>
+                <div class="insight-item">
+                    <div class="insight-priority priority-critical">Critical</div>
+                    <div class="insight-content">
+                        <div class="insight-text">
+                            <strong>Database Query Latency SLO</strong> at risk - only 24% error budget remaining. 
+                            P99 latency at 118ms exceeds 100ms target. Immediate optimization required on user_payments table.
+                        </div>
+                        <button class="insight-action">Optimize Database Queries</button>
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-priority priority-high">High</div>
+                    <div class="insight-content">
+                        <div class="insight-text">
+                            <strong>Request Success Rate</strong> - 40% error budget remaining with 2,100 daily 401 errors. 
+                            Investigate authentication token refresh logic and consider implementing token caching.
+                        </div>
+                        <button class="insight-action">Review Auth Implementation</button>
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-priority priority-medium">Medium</div>
+                    <div class="insight-content">
+                        <div class="insight-text">
+                            <strong>Cloud SQL Connection Pool</strong> - Currently at 56% capacity (45/80 connections). 
+                            Plan capacity increase or implement connection pooling optimization before peak season.
+                        </div>
+                        <button class="insight-action">Plan Capacity Scaling</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer with GCP Integration Guide -->
+        <div style="background: #f1f5f9; border-radius: 8px; padding: 1.5rem; margin-top: 2rem;">
+            <h3 style="margin-bottom: 1rem; color: #1e293b;">🔌 GCP Integration Instructions</h3>
+            <p style="color: #475569; margin-bottom: 1rem; font-size: 0.875rem;">
+                This dashboard displays static sample data. To populate with real metrics from your GCP projects:
+            </p>
+            <ol style="color: #475569; margin-left: 1.5rem; font-size: 0.875rem; line-height: 1.8;">
+                <li>Install Google Cloud Monitoring SDK: <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 4px;">pip install google-cloud-monitoring</code></li>
+                <li>Set up authentication with service account credentials</li>
+                <li>Use the provided Python script (see gcp-metrics-guide.md) to fetch metrics from all 10 GCP projects</li>
+                <li>Replace the sample data in this HTML with JSON output from the fetch script</li>
+                <li>Schedule periodic updates (e.g., every 15 minutes) to refresh dashboard data</li>
+            </ol>
+            <p style="color: #475569; margin-top: 1rem; font-size: 0.875rem;">
+                <strong>Key GCP Metrics Used:</strong> monitoring.googleapis.com/uptime_check/*, run.googleapis.com/request_*, 
+                cloudsql.googleapis.com/database/*, redis.googleapis.com/stats/*, pubsub.googleapis.com/subscription/*
+            </p>
+        </div>
+    </div>
+</body>
+</html>
