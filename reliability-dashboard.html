@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reliability Dashboard - Multi-Level Analytics</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'DM Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        #root {
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .dashboard {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            font-family: 'DM Sans', sans-serif;
+            color: #e2e8f0;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .dashboard::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .view-header {
+            margin-bottom: 2.5rem;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .back-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(99, 102, 241, 0.5);
+            transform: translateX(-4px);
+        }
+
+        .view-title-section {
+            margin-top: 1rem;
+        }
+
+        .view-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .view-subtitle {
+            font-size: 1rem;
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+            animation: scaleIn 0.5s ease-out 0.1s both;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .metric-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .metric-card:hover::before {
+            opacity: 1;
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s;
+        }
+
+        .metric-card:hover .metric-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .metric-trend-indicator {
+            display: flex;
+            align-items: center;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: #e2e8f0;
+            margin-bottom: 1.25rem;
+            line-height: 1;
+        }
+
+        .sparkline {
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .metric-card:hover .sparkline {
+            opacity: 1;
+        }
+
+        .trends-section {
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(180deg, #6366f1, #8b5cf6);
+            border-radius: 2px;
+        }
+
+        .trends-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .trend-chart {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s;
+        }
+
+        .trend-chart:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .chart-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .chart-current {
+            font-size: 1.25rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: #e2e8f0;
+        }
+
+        .chart-svg {
+            overflow: visible;
+        }
+
+        .chart-month {
+            font-size: 11px;
+            fill: #64748b;
+            font-weight: 500;
+        }
+
+        .applications-section,
+        .cujs-section,
+        .slos-section {
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+
+        .applications-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .app-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.75rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .app-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15);
+        }
+
+        .app-card:hover::after {
+            opacity: 1;
+        }
+
+        .app-card-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .app-name-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+
+        .app-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            color: white;
+        }
+
+        .app-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .app-metric {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .app-metric-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .app-metric-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: #e2e8f0;
+        }
+
+        .app-sparklines {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .cujs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .cuj-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.75rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+        }
+
+        .cuj-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(139, 92, 246, 0.4);
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.15);
+        }
+
+        .cuj-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .cuj-header h4 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+
+        .cuj-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .cuj-metric {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .cuj-metric-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .cuj-metric-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: #e2e8f0;
+        }
+
+        .slos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .slo-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.75rem;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s;
+        }
+
+        .slo-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .slo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .slo-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .slo-title h5 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+
+        .slo-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: #6366f1;
+        }
+
+        .slo-details {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .slo-detail {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .slo-detail-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .slo-detail-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .slo-budget {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .slo-budget-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .slo-budget-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .slo-budget-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slo-budget-value {
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            text-align: right;
+        }
+
+        .insights-panel {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            backdrop-filter: blur(20px);
+            animation: fadeInUp 0.6s ease-out 0.25s both;
+        }
+
+        .insights-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .insights-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .insight-item {
+            display: flex;
+            gap: 1.25rem;
+            align-items: flex-start;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.3s;
+        }
+
+        .insight-item:hover {
+            background: rgba(0, 0, 0, 0.3);
+            transform: translateX(4px);
+        }
+
+        .insight-priority {
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: white;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .insight-content {
+            flex: 1;
+        }
+
+        .insight-content p {
+            color: #cbd5e1;
+            margin-bottom: 0.75rem;
+            line-height: 1.6;
+        }
+
+        .insight-action {
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: #a5b4fc;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .insight-action:hover {
+            background: rgba(99, 102, 241, 0.3);
+            border-color: rgba(99, 102, 241, 0.6);
+            color: #c7d2fe;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                padding: 1rem;
+            }
+
+            .view-title {
+                font-size: 2rem;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .trends-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .applications-grid,
+            .cujs-grid,
+            .slos-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .metric-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Lucide React Icons (inline SVG components)
+        const TrendingUp = ({ size = 24, color = 'currentColor' }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                <polyline points="17 6 23 6 23 12"></polyline>
+            </svg>
+        );
+
+        const TrendingDown = ({ size = 24, color = 'currentColor' }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+                <polyline points="17 18 23 18 23 12"></polyline>
+            </svg>
+        );
+
+        const AlertCircle = ({ size = 24, color = 'currentColor' }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+        );
+
+        const CheckCircle = ({ size = 24, color = 'currentColor' }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+        );
+
+        const ArrowLeft = ({ size = 24, color = 'currentColor' }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+        );
+
+        const Activity = ({ size = 24, color = 'currentColor' }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+        );
+
+        const Zap = ({ size = 24, color = 'currentColor' }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+        );
+
+        const Clock = ({ size = 24, color = 'currentColor' }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+        );
+
+        // Mock data generator
+        const generateTrendData = (baseline, variance = 2) => {
+            return Array.from({ length: 6 }, (_, i) => ({
+                month: ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'][i],
+                value: Math.max(0, Math.min(100, baseline + (Math.random() - 0.5) * variance))
+            }));
+        };
+
+        const generateDepartmentData = () => ({
+            name: 'Engineering Department',
+            reliability: 98.7,
+            availability: 99.2,
+            latency: 97.8,
+            reliabilityTrend: generateTrendData(98.7, 1.5),
+            availabilityTrend: generateTrendData(99.2, 1),
+            latencyTrend: generateTrendData(97.8, 2),
+            applications: [
+                {
+                    id: 'app1',
+                    name: 'Payment Service',
+                    reliability: 99.1,
+                    availability: 99.5,
+                    latency: 98.2,
+                    status: 'healthy',
+                    reliabilityTrend: generateTrendData(99.1),
+                    availabilityTrend: generateTrendData(99.5),
+                    latencyTrend: generateTrendData(98.2),
+                    cujs: [
+                        {
+                            id: 'cuj1',
+                            name: 'Payment Processing',
+                            reliability: 99.3,
+                            availability: 99.6,
+                            latency: 98.5,
+                            reliabilityTrend: generateTrendData(99.3),
+                            availabilityTrend: generateTrendData(99.6),
+                            latencyTrend: generateTrendData(98.5),
+                            slos: [
+                                { id: 'slo1', name: 'API Latency', value: 98.5, threshold: 95, errorBudget: 12.5, type: 'latency', unit: 'ms', target: '<200ms' },
+                                { id: 'slo2', name: 'Service Uptime', value: 99.6, threshold: 99, errorBudget: 8.2, type: 'availability', unit: '%', target: '99%' },
+                                { id: 'slo3', name: 'Error Rate', value: 99.4, threshold: 98, errorBudget: 15.3, type: 'reliability', unit: '%', target: '<1%' }
+                            ]
+                        },
+                        {
+                            id: 'cuj2',
+                            name: 'Refund Workflow',
+                            reliability: 98.9,
+                            availability: 99.4,
+                            latency: 97.9,
+                            reliabilityTrend: generateTrendData(98.9),
+                            availabilityTrend: generateTrendData(99.4),
+                            latencyTrend: generateTrendData(97.9),
+                            slos: [
+                                { id: 'slo4', name: 'Processing Time', value: 97.9, threshold: 95, errorBudget: 9.1, type: 'latency', unit: 'ms', target: '<500ms' },
+                                { id: 'slo5', name: 'Queue Availability', value: 99.4, threshold: 99, errorBudget: 6.8, type: 'availability', unit: '%', target: '99%' },
+                                { id: 'slo6', name: 'Transaction Success', value: 98.9, threshold: 97, errorBudget: 11.2, type: 'reliability', unit: '%', target: '97%' }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'app2',
+                    name: 'User Authentication',
+                    reliability: 99.5,
+                    availability: 99.8,
+                    latency: 99.1,
+                    status: 'healthy',
+                    reliabilityTrend: generateTrendData(99.5),
+                    availabilityTrend: generateTrendData(99.8),
+                    latencyTrend: generateTrendData(99.1),
+                    cujs: [
+                        {
+                            id: 'cuj3',
+                            name: 'Login Flow',
+                            reliability: 99.6,
+                            availability: 99.9,
+                            latency: 99.3,
+                            reliabilityTrend: generateTrendData(99.6),
+                            availabilityTrend: generateTrendData(99.9),
+                            latencyTrend: generateTrendData(99.3),
+                            slos: [
+                                { id: 'slo7', name: 'Auth Response Time', value: 99.3, threshold: 98, errorBudget: 18.5, type: 'latency', unit: 'ms', target: '<100ms' },
+                                { id: 'slo8', name: 'Service Health', value: 99.9, threshold: 99.5, errorBudget: 22.1, type: 'availability', unit: '%', target: '99.5%' },
+                                { id: 'slo9', name: 'Auth Success Rate', value: 99.6, threshold: 99, errorBudget: 14.7, type: 'reliability', unit: '%', target: '99%' }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'app3',
+                    name: 'Inventory System',
+                    reliability: 97.9,
+                    availability: 98.5,
+                    latency: 96.8,
+                    status: 'warning',
+                    reliabilityTrend: generateTrendData(97.9, 3),
+                    availabilityTrend: generateTrendData(98.5, 2),
+                    latencyTrend: generateTrendData(96.8, 3.5),
+                    cujs: [
+                        {
+                            id: 'cuj4',
+                            name: 'Stock Updates',
+                            reliability: 97.8,
+                            availability: 98.4,
+                            latency: 96.5,
+                            reliabilityTrend: generateTrendData(97.8, 3),
+                            availabilityTrend: generateTrendData(98.4, 2),
+                            latencyTrend: generateTrendData(96.5, 3.5),
+                            slos: [
+                                { id: 'slo10', name: 'Update Latency', value: 96.5, threshold: 95, errorBudget: 4.2, type: 'latency', unit: 'ms', target: '<1s' },
+                                { id: 'slo11', name: 'Database Uptime', value: 98.4, threshold: 98, errorBudget: 5.1, type: 'availability', unit: '%', target: '98%' },
+                                { id: 'slo12', name: 'Sync Success', value: 97.8, threshold: 96, errorBudget: 6.8, type: 'reliability', unit: '%', target: '96%' }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'app4',
+                    name: 'Analytics Pipeline',
+                    reliability: 98.3,
+                    availability: 98.9,
+                    latency: 97.5,
+                    status: 'healthy',
+                    reliabilityTrend: generateTrendData(98.3),
+                    availabilityTrend: generateTrendData(98.9),
+                    latencyTrend: generateTrendData(97.5),
+                    cujs: [
+                        {
+                            id: 'cuj5',
+                            name: 'Data Ingestion',
+                            reliability: 98.3,
+                            availability: 98.9,
+                            latency: 97.5,
+                            reliabilityTrend: generateTrendData(98.3),
+                            availabilityTrend: generateTrendData(98.9),
+                            latencyTrend: generateTrendData(97.5),
+                            slos: [
+                                { id: 'slo13', name: 'Ingestion Rate', value: 97.5, threshold: 95, errorBudget: 8.9, type: 'latency', unit: 'events/s', target: '>1000/s' },
+                                { id: 'slo14', name: 'Pipeline Health', value: 98.9, threshold: 98, errorBudget: 11.3, type: 'availability', unit: '%', target: '98%' },
+                                { id: 'slo15', name: 'Data Accuracy', value: 98.3, threshold: 97, errorBudget: 9.7, type: 'reliability', unit: '%', target: '97%' }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        });
+
+        const MiniSparkline = ({ data, color }) => {
+            const points = data.map((d, i) => `${i * 20},${100 - d.value}`).join(' ');
+            return (
+                <svg width="80" height="24" className="sparkline">
+                    <polyline
+                        points={points}
+                        fill="none"
+                        stroke={color}
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                </svg>
+            );
+        };
+
+        const TrendChart = ({ data, label, color }) => {
+            const max = Math.max(...data.map(d => d.value));
+            const min = Math.min(...data.map(d => d.value));
+            const range = max - min || 1;
+            
+            return (
+                <div className="trend-chart">
+                    <div className="chart-header">
+                        <span className="chart-label">{label}</span>
+                        <span className="chart-current">{data[data.length - 1].value.toFixed(1)}%</span>
+                    </div>
+                    <svg width="100%" height="80" className="chart-svg">
+                        <defs>
+                            <linearGradient id={`gradient-${label}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+                                <stop offset="100%" stopColor={color} stopOpacity="0.05" />
+                            </linearGradient>
+                        </defs>
+                        {data.map((d, i) => {
+                            const x = (i / (data.length - 1)) * 100;
+                            const y = 100 - ((d.value - min) / range) * 80;
+                            return (
+                                <g key={i}>
+                                    <circle cx={`${x}%`} cy={y} r="3" fill={color} />
+                                    <text x={`${x}%`} y="95" className="chart-month" textAnchor="middle">{d.month}</text>
+                                </g>
+                            );
+                        })}
+                        <polyline
+                            points={data.map((d, i) => {
+                                const x = (i / (data.length - 1)) * 100;
+                                const y = 100 - ((d.value - min) / range) * 80;
+                                return `${x}%,${y}`;
+                            }).join(' ')}
+                            fill={`url(#gradient-${label})`}
+                            stroke={color}
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    </svg>
+                </div>
+            );
+        };
+
+        const MetricCard = ({ icon: Icon, label, value, trend, color, size = 'large' }) => {
+            const isPositive = trend && trend[trend.length - 1].value >= trend[0].value;
+            
+            return (
+                <div className={`metric-card metric-${size}`}>
+                    <div className="metric-header">
+                        <div className="metric-icon" style={{ backgroundColor: `${color}15` }}>
+                            <Icon size={size === 'large' ? 24 : 20} color={color} />
+                        </div>
+                        <div className="metric-trend-indicator">
+                            {isPositive ? (
+                                <TrendingUp size={16} color="#10b981" />
+                            ) : (
+                                <TrendingDown size={16} color="#ef4444" />
+                            )}
+                        </div>
+                    </div>
+                    <div className="metric-label">{label}</div>
+                    <div className="metric-value">{value.toFixed(2)}%</div>
+                    {trend && <MiniSparkline data={trend} color={color} />}
+                </div>
+            );
+        };
+
+        const ApplicationCard = ({ app, onClick }) => {
+            const statusColors = {
+                healthy: '#10b981',
+                warning: '#f59e0b',
+                critical: '#ef4444'
+            };
+
+            return (
+                <div className="app-card" onClick={onClick}>
+                    <div className="app-card-header">
+                        <div className="app-name-row">
+                            <h3>{app.name}</h3>
+                            <div className="app-status" style={{ backgroundColor: statusColors[app.status] }}>
+                                {app.status === 'healthy' ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="app-metrics">
+                        <div className="app-metric">
+                            <span className="app-metric-label">Reliability</span>
+                            <span className="app-metric-value">{app.reliability.toFixed(1)}%</span>
+                        </div>
+                        <div className="app-metric">
+                            <span className="app-metric-label">Availability</span>
+                            <span className="app-metric-value">{app.availability.toFixed(1)}%</span>
+                        </div>
+                        <div className="app-metric">
+                            <span className="app-metric-label">Latency</span>
+                            <span className="app-metric-value">{app.latency.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                    <div className="app-sparklines">
+                        <MiniSparkline data={app.reliabilityTrend} color="#6366f1" />
+                    </div>
+                </div>
+            );
+        };
+
+        const CUJCard = ({ cuj, onClick }) => {
+            return (
+                <div className="cuj-card" onClick={onClick}>
+                    <div className="cuj-header">
+                        <h4>{cuj.name}</h4>
+                        <Activity size={18} color="#8b5cf6" />
+                    </div>
+                    <div className="cuj-metrics">
+                        <div className="cuj-metric">
+                            <span className="cuj-metric-label">Reliability</span>
+                            <span className="cuj-metric-value">{cuj.reliability.toFixed(1)}%</span>
+                        </div>
+                        <div className="cuj-metric">
+                            <span className="cuj-metric-label">Availability</span>
+                            <span className="cuj-metric-value">{cuj.availability.toFixed(1)}%</span>
+                        </div>
+                        <div className="cuj-metric">
+                            <span className="cuj-metric-label">Latency</span>
+                            <span className="cuj-metric-value">{cuj.latency.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                    <MiniSparkline data={cuj.reliabilityTrend} color="#8b5cf6" />
+                </div>
+            );
+        };
+
+        const SLOCard = ({ slo }) => {
+            const budgetStatus = slo.errorBudget > 15 ? 'healthy' : slo.errorBudget > 5 ? 'warning' : 'critical';
+            const budgetColors = {
+                healthy: '#10b981',
+                warning: '#f59e0b',
+                critical: '#ef4444'
+            };
+
+            const typeIcons = {
+                latency: Clock,
+                availability: CheckCircle,
+                reliability: Activity
+            };
+
+            const Icon = typeIcons[slo.type];
+
+            return (
+                <div className="slo-card">
+                    <div className="slo-header">
+                        <div className="slo-title">
+                            <Icon size={16} color="#64748b" />
+                            <h5>{slo.name}</h5>
+                        </div>
+                        <div className="slo-value">{slo.value.toFixed(1)}%</div>
+                    </div>
+                    <div className="slo-details">
+                        <div className="slo-detail">
+                            <span className="slo-detail-label">Target</span>
+                            <span className="slo-detail-value">{slo.target}</span>
+                        </div>
+                        <div className="slo-detail">
+                            <span className="slo-detail-label">Threshold</span>
+                            <span className="slo-detail-value">{slo.threshold}%</span>
+                        </div>
+                    </div>
+                    <div className="slo-budget">
+                        <div className="slo-budget-label">Error Budget Remaining</div>
+                        <div className="slo-budget-bar">
+                            <div 
+                                className="slo-budget-fill"
+                                style={{ 
+                                    width: `${slo.errorBudget}%`,
+                                    backgroundColor: budgetColors[budgetStatus]
+                                }}
+                            />
+                        </div>
+                        <div className="slo-budget-value" style={{ color: budgetColors[budgetStatus] }}>
+                            {slo.errorBudget.toFixed(1)}%
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ActionableInsights = ({ level, data }) => {
+            const insights = {
+                department: [
+                    { priority: 'high', text: 'Inventory System latency below target - investigate database query optimization', action: 'Review slow queries' },
+                    { priority: 'medium', text: 'Payment Service showing slight decline - monitor refund workflow performance', action: 'Schedule review' }
+                ],
+                application: [
+                    { priority: 'high', text: 'Refund Workflow latency trending down - optimize queue processing', action: 'Implement fixes' },
+                    { priority: 'medium', text: 'Payment Processing maintaining healthy margins - continue monitoring', action: 'Monitor' }
+                ],
+                slo: [
+                    { priority: 'critical', text: 'Update Latency error budget at 4.2% - immediate optimization required', action: 'Scale resources' },
+                    { priority: 'high', text: 'Database connection pooling needs tuning to improve uptime', action: 'Configure pool' },
+                    { priority: 'medium', text: 'Consider implementing caching layer for frequently accessed inventory', action: 'Plan implementation' }
+                ]
+            };
+
+            const priorityColors = {
+                critical: '#ef4444',
+                high: '#f59e0b',
+                medium: '#3b82f6'
+            };
+
+            return (
+                <div className="insights-panel">
+                    <h3 className="insights-title">
+                        <Zap size={20} />
+                        Actionable Insights
+                    </h3>
+                    <div className="insights-list">
+                        {insights[level].map((insight, idx) => (
+                            <div key={idx} className="insight-item">
+                                <div className="insight-priority" style={{ backgroundColor: priorityColors[insight.priority] }}>
+                                    {insight.priority}
+                                </div>
+                                <div className="insight-content">
+                                    <p>{insight.text}</p>
+                                    <button className="insight-action">{insight.action}</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const ReliabilityDashboard = () => {
+            const [view, setView] = useState('department');
+            const [selectedApp, setSelectedApp] = useState(null);
+            const [selectedCUJ, setSelectedCUJ] = useState(null);
+            const data = generateDepartmentData();
+
+            const handleAppClick = (app) => {
+                setSelectedApp(app);
+                setView('application');
+            };
+
+            const handleCUJClick = (cuj) => {
+                setSelectedCUJ(cuj);
+                setView('cuj');
+            };
+
+            const handleBack = () => {
+                if (view === 'cuj') {
+                    setView('application');
+                    setSelectedCUJ(null);
+                } else if (view === 'application') {
+                    setView('department');
+                    setSelectedApp(null);
+                }
+            };
+
+            const renderDepartmentView = () => (
+                <>
+                    <div className="view-header">
+                        <div className="view-title-section">
+                            <h1 className="view-title">{data.name}</h1>
+                            <p className="view-subtitle">Executive Overview - 10 Applications</p>
+                        </div>
+                    </div>
+
+                    <div className="metrics-grid">
+                        <MetricCard
+                            icon={Activity}
+                            label="Overall Reliability"
+                            value={data.reliability}
+                            trend={data.reliabilityTrend}
+                            color="#6366f1"
+                        />
+                        <MetricCard
+                            icon={CheckCircle}
+                            label="Overall Availability"
+                            value={data.availability}
+                            trend={data.availabilityTrend}
+                            color="#10b981"
+                        />
+                        <MetricCard
+                            icon={Clock}
+                            label="Overall Latency Score"
+                            value={data.latency}
+                            trend={data.latencyTrend}
+                            color="#f59e0b"
+                        />
+                    </div>
+
+                    <div className="trends-section">
+                        <h2 className="section-title">6-Month Performance Trends</h2>
+                        <div className="trends-grid">
+                            <TrendChart data={data.reliabilityTrend} label="Reliability" color="#6366f1" />
+                            <TrendChart data={data.availabilityTrend} label="Availability" color="#10b981" />
+                            <TrendChart data={data.latencyTrend} label="Latency" color="#f59e0b" />
+                        </div>
+                    </div>
+
+                    <ActionableInsights level="department" />
+
+                    <div className="applications-section">
+                        <h2 className="section-title">Application Health</h2>
+                        <div className="applications-grid">
+                            {data.applications.map(app => (
+                                <ApplicationCard key={app.id} app={app} onClick={() => handleAppClick(app)} />
+                            ))}
+                        </div>
+                    </div>
+                </>
+            );
+
+            const renderApplicationView = () => (
+                <>
+                    <div className="view-header">
+                        <button className="back-button" onClick={handleBack}>
+                            <ArrowLeft size={20} />
+                            Back to Department
+                        </button>
+                        <div className="view-title-section">
+                            <h1 className="view-title">{selectedApp.name}</h1>
+                            <p className="view-subtitle">Product Owner View - {selectedApp.cujs.length} Critical User Journeys</p>
+                        </div>
+                    </div>
+
+                    <div className="metrics-grid">
+                        <MetricCard
+                            icon={Activity}
+                            label="Application Reliability"
+                            value={selectedApp.reliability}
+                            trend={selectedApp.reliabilityTrend}
+                            color="#6366f1"
+                        />
+                        <MetricCard
+                            icon={CheckCircle}
+                            label="Application Availability"
+                            value={selectedApp.availability}
+                            trend={selectedApp.availabilityTrend}
+                            color="#10b981"
+                        />
+                        <MetricCard
+                            icon={Clock}
+                            label="Application Latency"
+                            value={selectedApp.latency}
+                            trend={selectedApp.latencyTrend}
+                            color="#f59e0b"
+                        />
+                    </div>
+
+                    <div className="trends-section">
+                        <h2 className="section-title">6-Month Performance Trends</h2>
+                        <div className="trends-grid">
+                            <TrendChart data={selectedApp.reliabilityTrend} label="Reliability" color="#6366f1" />
+                            <TrendChart data={selectedApp.availabilityTrend} label="Availability" color="#10b981" />
+                            <TrendChart data={selectedApp.latencyTrend} label="Latency" color="#f59e0b" />
+                        </div>
+                    </div>
+
+                    <ActionableInsights level="application" />
+
+                    <div className="cujs-section">
+                        <h2 className="section-title">Critical User Journeys</h2>
+                        <div className="cujs-grid">
+                            {selectedApp.cujs.map(cuj => (
+                                <CUJCard key={cuj.id} cuj={cuj} onClick={() => handleCUJClick(cuj)} />
+                            ))}
+                        </div>
+                    </div>
+                </>
+            );
+
+            const renderCUJView = () => {
+                const avgReliability = selectedCUJ.slos.filter(s => s.type === 'reliability').reduce((sum, s) => sum + s.value, 0) / selectedCUJ.slos.filter(s => s.type === 'reliability').length;
+                const avgAvailability = selectedCUJ.slos.filter(s => s.type === 'availability').reduce((sum, s) => sum + s.value, 0) / selectedCUJ.slos.filter(s => s.type === 'availability').length;
+                const avgLatency = selectedCUJ.slos.filter(s => s.type === 'latency').reduce((sum, s) => sum + s.value, 0) / selectedCUJ.slos.filter(s => s.type === 'latency').length;
+
+                return (
+                    <>
+                        <div className="view-header">
+                            <button className="back-button" onClick={handleBack}>
+                                <ArrowLeft size={20} />
+                                Back to Application
+                            </button>
+                            <div className="view-title-section">
+                                <h1 className="view-title">{selectedCUJ.name}</h1>
+                                <p className="view-subtitle">Dev & Ops View - {selectedCUJ.slos.length} Service Level Objectives</p>
+                            </div>
+                        </div>
+
+                        <div className="metrics-grid">
+                            <MetricCard
+                                icon={Activity}
+                                label="Avg SLO Reliability"
+                                value={avgReliability}
+                                trend={selectedCUJ.reliabilityTrend}
+                                color="#6366f1"
+                            />
+                            <MetricCard
+                                icon={CheckCircle}
+                                label="Avg SLO Availability"
+                                value={avgAvailability}
+                                trend={selectedCUJ.availabilityTrend}
+                                color="#10b981"
+                            />
+                            <MetricCard
+                                icon={Clock}
+                                label="Avg SLO Latency"
+                                value={avgLatency}
+                                trend={selectedCUJ.latencyTrend}
+                                color="#f59e0b"
+                            />
+                        </div>
+
+                        <div className="trends-section">
+                            <h2 className="section-title">6-Month Performance Trends</h2>
+                            <div className="trends-grid">
+                                <TrendChart data={selectedCUJ.reliabilityTrend} label="Reliability" color="#6366f1" />
+                                <TrendChart data={selectedCUJ.availabilityTrend} label="Availability" color="#10b981" />
+                                <TrendChart data={selectedCUJ.latencyTrend} label="Latency" color="#f59e0b" />
+                            </div>
+                        </div>
+
+                        <ActionableInsights level="slo" />
+
+                        <div className="slos-section">
+                            <h2 className="section-title">Service Level Objectives</h2>
+                            <div className="slos-grid">
+                                {selectedCUJ.slos.map(slo => (
+                                    <SLOCard key={slo.id} slo={slo} />
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                );
+            };
+
+            return (
+                <div className="dashboard">
+                    <div className="dashboard-container">
+                        {view === 'department' && renderDepartmentView()}
+                        {view === 'application' && renderApplicationView()}
+                        {view === 'cuj' && renderCUJView()}
+                    </div>
+                </div>
+            );
+        };
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ReliabilityDashboard />);
+    </script>
+</body>
+</html>
